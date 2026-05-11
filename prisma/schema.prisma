@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// 运单表
+model Order {
+  id              Int          @id @default(autoincrement())
+  externalCode    String?      @map("external_code")
+  senderName      String       @map("sender_name")
+  senderPhone     String       @map("sender_phone")
+  senderAddress   String       @map("sender_address")
+  receiverName    String       @map("receiver_name")
+  receiverPhone   String       @map("receiver_phone")
+  receiverAddress String       @map("receiver_address")
+  weight          Decimal      @db.Decimal(10, 2)
+  quantity        Int
+  temperature     String
+  remark          String?
+  batchId         Int?         @map("batch_id")
+  batch           ImportBatch? @relation(fields: [batchId], references: [id])
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@unique([externalCode], map: "idx_order_external_code")
+  @@map("orders")
+}
+
+/// 模板映射表
+model TemplateMapping {
+  id           Int      @id @default(autoincrement())
+  fingerprint  String   @unique
+  headerNames  Json     @map("header_names")
+  mappingRules Json     @map("mapping_rules")
+  createdAt    DateTime @default(now()) @map("created_at")
+  lastUsedAt   DateTime @default(now()) @map("last_used_at")
+
+  @@map("template_mappings")
+}
+
+/// 导入批次表
+model ImportBatch {
+  id           Int      @id @default(autoincrement())
+  fileName     String?  @map("file_name")
+  totalCount   Int      @default(0) @map("total_count")
+  successCount Int      @default(0) @map("success_count")
+  failedCount  Int      @default(0) @map("failed_count")
+  status       String   @default("pending")
+  orders       Order[]
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("import_batches")
+}
